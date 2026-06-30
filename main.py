@@ -163,7 +163,7 @@ hfrs_selected = hfrs_pl.select([
 # A left join keeps all included patients, even if they have no previous CIM-10 diagnosis.
 # For patients without previous diagnosis codes, missing score values are replaced by 0.
 final_patient_data = (
-    included_patient_with_comorbidity_drug
+    included_patient_with_comorbidity_drug_demo
     .join(charlson_selected, on="patient_id", how="left")
     .join(hfrs_selected, on="patient_id", how="left")
     .with_columns([
