@@ -172,5 +172,19 @@ final_patient_data = (
     ])
 )
 
+# Calculating OMT Score 
+final_patient_data = final_patient_data.with_columns([
+    (
+        pl.col("beta_blocker").fill_null(0)
+        + pl.max_horizontal([
+            pl.col("ACEI").fill_null(0),
+            pl.col("ARB").fill_null(0),
+            pl.col("ARNI").fill_null(0),
+        ])
+        + pl.col("anti_aldosterone").fill_null(0)
+        + pl.col("sglt2i").fill_null(0)
+    ).alias("OMT_component_score")
+])
+
 # Save the final patient-level dataset as a Parquet file.
 final_patient_data.write_parquet("final_patient_data.parquet")
