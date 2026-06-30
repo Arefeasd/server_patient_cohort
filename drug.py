@@ -19,62 +19,59 @@ def create_treatment_flags(df_tr: pl.DataFrame) -> pl.DataFrame:
         .alias("code_atc")
     )
 
-    # Create binary indicators based on the ATC code prefixes.
-    df_tr_flags = df_tr.with_columns([
+# Create binary indicators based on the ATC code prefixes.
+df_tr_flags = df_tr.with_columns([
 
-        # Beta-blockers: ATC codes starting with C07
-        pl.col("code_atc")
-        .str.starts_with("C07") # True or False
-        .cast(pl.Int8)          # 0 or 1
-        .alias("beta_blocker"),
+    # Beta-blockers
+    pl.col("code_atc")
+    .str.starts_with("C07")
+    .cast(pl.Int8)
+    .alias("beta_blocker"),
 
-        # RASS inhibitors:
-    
-        # ACE inhibitors: plain or combinations
+    # ACE inhibitors: plain or combinations
+    (
+        pl.col("code_atc").str.starts_with("C09A") |
+        pl.col("code_atc").str.starts_with("C09B")
+    )
+    .cast(pl.Int8)
+    .alias("ACEI"),
+
+    # ARBs: plain or combinations, excluding ARNI
+    (
         (
-            pl.col("code_atc").str.starts_with("C09A") |
-            pl.col("code_atc").str.starts_with("C09B")
+            pl.col("code_atc").str.starts_with("C09C") |
+            pl.col("code_atc").str.starts_with("C09D")
         )
-        .cast(pl.Int8)
-        .alias("ACEI"),
+        &
+        (~pl.col("code_atc").str.starts_with("C09DX04"))
+    )
+    .cast(pl.Int8)
+    .alias("ARB"),
 
-        # ARBs: plain or combinations, excluding ARNI
-        (
-            (
-                pl.col("code_atc").str.starts_with("C09C") |
-                pl.col("code_atc").str.starts_with("C09D")
-            )
-            &
-            (~pl.col("code_atc").str.starts_with("C09DX04"))
-        )
-        .cast(pl.Int8)
-        .alias("ARB"),
+    # ARNI: sacubitril/valsartan
+    pl.col("code_atc")
+    .str.starts_with("C09DX04")
+    .cast(pl.Int8)
+    .alias("ARNI"),
 
-        # ARNI: sacubitril/valsartan, ATC code C09DX04
-        pl.col("code_atc")
-        .str.starts_with("C09DX04")
-        .cast(pl.Int8)
-        .alias("ARNI"),
+    # Aldosterone antagonists / MRA
+    pl.col("code_atc")
+    .str.starts_with("C03DA")
+    .cast(pl.Int8)
+    .alias("anti_aldosterone"),
 
+    # SGLT2 inhibitors
+    pl.col("code_atc")
+    .str.starts_with("A10BK")
+    .cast(pl.Int8)
+    .alias("sglt2i"),
 
-        # Aldosterone antagonists / MRA
-        pl.col("code_atc")
-        .str.starts_with("C03DA")
-        .cast(pl.Int8)
-        .alias("anti_aldosterone"),
-
-        # SGLT2 inhibitors: ATC codes starting with A10
-        pl.col("code_atc")
-        .str.starts_with("A10BK")
-        .cast(pl.Int8)
-        .alias("sglt2i"),
-
-        # Furosemide: ATC code C03CA01
-        pl.col("code_atc")
-        .str.starts_with("C03CA01")
-        .cast(pl.Int8)
-        .alias("furosemide"),
-    ])
+    # Furosemide
+    pl.col("code_atc")
+    .str.starts_with("C03CA01")
+    .cast(pl.Int8)
+    .alias("furosemide"),
+])
 
     # Keep only the identifiers, the ATC code, and the newly created flags.
     df_tr_flags = df_tr_flags.select([
