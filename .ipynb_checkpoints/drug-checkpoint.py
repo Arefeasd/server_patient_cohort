@@ -29,14 +29,24 @@ def create_treatment_flags(df_tr: pl.DataFrame) -> pl.DataFrame:
         .alias("beta_blocker"),
 
         # RASS inhibitors:
-        # ATC codes starting with C09
-        pl.col("code_atc")
-        .str.starts_with("C09A")
+    
+        # ACE inhibitors: plain or combinations
+        (
+            pl.col("code_atc").str.starts_with("C09A") |
+            pl.col("code_atc").str.starts_with("C09B")
+        )
         .cast(pl.Int8)
         .alias("ACEI"),
 
-         pl.col("code_atc")
-        .str.starts_with("C09C")
+        # ARBs: plain or combinations, excluding ARNI
+        (
+            (
+                pl.col("code_atc").str.starts_with("C09C") |
+                pl.col("code_atc").str.starts_with("C09D")
+            )
+            &
+            (~pl.col("code_atc").str.starts_with("C09DX04"))
+        )
         .cast(pl.Int8)
         .alias("ARB"),
 
@@ -46,15 +56,16 @@ def create_treatment_flags(df_tr: pl.DataFrame) -> pl.DataFrame:
         .cast(pl.Int8)
         .alias("ARNI"),
 
-        # MRA drugs: ATC codes starting with C03
+
+        # Aldosterone antagonists / MRA
         pl.col("code_atc")
-        .str.starts_with("C03")
+        .str.starts_with("C03DA")
         .cast(pl.Int8)
         .alias("anti_aldosterone"),
 
         # SGLT2 inhibitors: ATC codes starting with A10
         pl.col("code_atc")
-        .str.starts_with("A10")
+        .str.starts_with("A10BK")
         .cast(pl.Int8)
         .alias("sglt2i"),
 
