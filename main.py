@@ -83,7 +83,7 @@ treatments_with_flags = drug.create_treatment_flags(treatments)
 # one medication record from that treatment class, otherwise 0.
 patient_treatment_flags = drug.get_patient_treatment_flags(treatments_with_flags)
 
-drug_cols = ["beta_blocker", "ACEI", "ARB", "ARNI", "anti_aldosterone", "sglt2i", "furosemide"]
+drug_cols = ["beta_blocker", "ACEI", "ARB", "anti_aldosterone", "furosemide"]
 
 
 # Add patient-level drug indicators to included patients.
@@ -179,10 +179,10 @@ final_patient_data = final_patient_data.with_columns([
         + pl.max_horizontal([
             pl.col("ACEI").fill_null(0),
             pl.col("ARB").fill_null(0),
-            pl.col("ARNI").fill_null(0),
+           # pl.col("ARNI").fill_null(0),
         ])
         + pl.col("anti_aldosterone").fill_null(0)
-        + pl.col("sglt2i").fill_null(0)
+       # + pl.col("sglt2i").fill_null(0)
     ).alias("OMT_component_score")
 ])
 

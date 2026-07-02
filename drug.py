@@ -19,58 +19,58 @@ def create_treatment_flags(df_tr: pl.DataFrame) -> pl.DataFrame:
         .alias("code_atc")
     )
 
-# Create binary indicators based on the ATC code prefixes.
-df_tr_flags = df_tr.with_columns([
-
-    # Beta-blockers
-    pl.col("code_atc")
-    .str.starts_with("C07")
-    .cast(pl.Int8)
-    .alias("beta_blocker"),
-
-    # ACE inhibitors: plain or combinations
-    (
-        pl.col("code_atc").str.starts_with("C09A") |
-        pl.col("code_atc").str.starts_with("C09B")
-    )
-    .cast(pl.Int8)
-    .alias("ACEI"),
-
-    # ARBs: plain or combinations, excluding ARNI
-    (
+    # Create binary indicators based on the ATC code prefixes.
+    df_tr_flags = df_tr.with_columns([
+    
+        # Beta-blockers
+        pl.col("code_atc")
+        .str.starts_with("C07")
+        .cast(pl.Int8)
+        .alias("beta_blocker"),
+    
+        # ACE inhibitors: plain or combinations
         (
-            pl.col("code_atc").str.starts_with("C09C") |
-            pl.col("code_atc").str.starts_with("C09D")
+            pl.col("code_atc").str.starts_with("C09A") |
+            pl.col("code_atc").str.starts_with("C09B")
         )
-        &
-        (~pl.col("code_atc").str.starts_with("C09DX04"))
-    )
-    .cast(pl.Int8)
-    .alias("ARB"),
-
-    # ARNI: sacubitril/valsartan
-    pl.col("code_atc")
-    .str.starts_with("C09DX04")
-    .cast(pl.Int8)
-    .alias("ARNI"),
-
-    # Aldosterone antagonists / MRA
-    pl.col("code_atc")
-    .str.starts_with("C03DA")
-    .cast(pl.Int8)
-    .alias("anti_aldosterone"),
-
-    # SGLT2 inhibitors
-    pl.col("code_atc")
-    .str.starts_with("A10BK")
-    .cast(pl.Int8)
-    .alias("sglt2i"),
-
-    # Furosemide
-    pl.col("code_atc")
-    .str.starts_with("C03CA01")
-    .cast(pl.Int8)
-    .alias("furosemide"),
+        .cast(pl.Int8)
+        .alias("ACEI"),
+    
+        # ARBs: plain or combinations, excluding ARNI
+        (
+            (
+                pl.col("code_atc").str.starts_with("C09C") |
+                pl.col("code_atc").str.starts_with("C09D")
+            )
+            &
+            (~pl.col("code_atc").str.starts_with("C09DX04"))
+        )
+        .cast(pl.Int8)
+        .alias("ARB"),
+    
+        # ARNI: sacubitril/valsartan
+        #pl.col("code_atc")
+        #.str.starts_with("C09DX04")
+        #.cast(pl.Int8)
+        #.alias("ARNI"),
+    
+        # Aldosterone antagonists / MRA
+        pl.col("code_atc")
+        .str.starts_with("C03DA")
+        .cast(pl.Int8)
+        .alias("anti_aldosterone"),
+    
+        # SGLT2 inhibitors
+        #pl.col("code_atc")
+        #.str.starts_with("A10BK")
+        #.cast(pl.Int8)
+        #.alias("sglt2i"),
+    
+        # Furosemide
+        pl.col("code_atc")
+        .str.starts_with("C03CA01")
+        .cast(pl.Int8)
+        .alias("furosemide"),
 ])
 
     # Keep only the identifiers, the ATC code, and the newly created flags.
@@ -84,9 +84,9 @@ df_tr_flags = df_tr.with_columns([
         "beta_blocker",
         "ACEI",
         "ARB",
-        "ARNI",
+        #"ARNI",
         "anti_aldosterone",
-        "sglt2i",
+        #"sglt2i",
         "furosemide",
     ])
 
@@ -128,9 +128,9 @@ def get_patient_treatment_flags(
             pl.col("beta_blocker").max().alias("beta_blocker"),
             pl.col("ACEI").max().alias("ACEI"),
             pl.col("ARB").max().alias("ARB"),
-            pl.col("ARNI").max().alias("ARNI"),
+            #pl.col("ARNI").max().alias("ARNI"),
             pl.col("anti_aldosterone").max().alias("anti_aldosterone"),
-            pl.col("sglt2i").max().alias("sglt2i"),
+            #pl.col("sglt2i").max().alias("sglt2i"),
             pl.col("furosemide").max().alias("furosemide"),
         ])
     )
@@ -138,7 +138,7 @@ def get_patient_treatment_flags(
     # Return one row per patient.
     return patient_treatment_flags
 
-drug_cols = ["beta_blocker", "ACEI", "ARB", "ARNI", "anti_aldosterone", "sglt2i", "furosemide"]
+drug_cols = ["beta_blocker", "ACEI", "ARB",  "anti_aldosterone",  "furosemide"]
 
 def get_patient_with_comorbidity_drug(
     included_patients_with_comorbidity: pl.DataFrame,
