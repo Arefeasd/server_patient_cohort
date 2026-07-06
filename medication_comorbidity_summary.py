@@ -3,65 +3,73 @@ import polars as pl
 def summarize_medications_by_comorbidity(
     df: pl.DataFrame,
     disease_cols: list[str],
-    med_cols: list[str]
+    med_cols: list[str],
+    omt_col: str = "OMT_component_score"
 ) -> pl.DataFrame:
     """
-    Create a summary table for diseases and medication use.
+    Create a summary table for diseases, medication use, and OMT score.
 
     For each disease, the function calculates:
     - number of patients with the disease
     - percentage of all patients with the disease
     - percentage of patients with the disease who take each medication
+    - minimum OMT component score among patients with the disease
+    - maximum OMT component score among patients with the disease
     """
 
-    # Total number of patients
     total_patients = df.height
 
-    # Empty list to store rows
     result_rows = []
 
-    # Loop over each disease
     for disease in disease_cols:
 
-        # Keep only patients who have this disease
         patients_with_disease = df.filter(
             pl.col(disease) == 1
         )
 
-        # Number of patients with this disease
         n_disease = patients_with_disease.height
 
-        # Percentage of all patients with this disease
-        percent_disease = n_disease / total_patients * 100
+        percent_disease = (
+            n_disease / total_patients * 100
+            if total_patients > 0
+            else 0
+        )
 
-        # Create one row for this disease
         row = {
             "Disease": disease,
             "Number of patients": n_disease,
             "Percent of all patients": percent_disease
         }
 
-        # Loop over each medication
         for med in med_cols:
 
-            # Number of patients with this disease who also take this medication
             n_med = patients_with_disease.filter(
                 pl.col(med) == 1
             ).height
 
-            # Percentage among patients with this disease
-            if n_disease > 0:
-                percent_med = n_med / n_disease * 100
-            else:
-                percent_med = 0
+            percent_med = (
+                n_med / n_disease * 100
+                if n_disease > 0
+                else 0
+            )
 
-            # Add this percentage to the row
             row[f"Percent taking {med}"] = percent_med
 
-        # Add this row to the final result
+        # Add min and max OMT score among patients with this disease
+        if n_disease > 0:
+            row[f"Min {omt_col}"] = patients_with_disease.select(
+                pl.col(omt_col).min()
+            ).item()
+
+            row[f"Max {omt_col}"] = patients_with_disease.select(
+                pl.col(omt_col).max()
+            ).item()
+        else:
+            row[f"Min {omt_col}"] = None
+            row[f"Max {omt_col}"] = None
+
         result_rows.append(row)
 
-    # Convert result to Polars DataFrame
     result = pl.DataFrame(result_rows)
 
     return result
