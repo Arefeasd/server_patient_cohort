@@ -1,7 +1,7 @@
 import polars as pl
 import pandas as pd
 import json 
-from pycomorb import comorbidity
+from comorbidipy import comorbidity, ScoreType, hfrs
 import icu_flag
 import hosps
 import cim10_utils
@@ -127,36 +127,32 @@ data_for_score = (
     )
     .unique()
 )
-data_for_score_pd = data_for_score.to_pandas()
 
-charlson = comorbidity(
-    score="charlson",
-    df=data_for_score_pd,
+charlson_score = comorbidity(
+    
+    data_for_score,
+        
     id_col="patient_id",
+        
     code_col="concept_code",
-    age_col="age_at_admission",
-    implementation="quan",
+        
+    score=ScoreType.CHARLSON,
 )
 
-hfrs = comorbidity(
-    score="hfrs",
-    df=data_for_score_pd,
+hfrs_score = hfrs(
+    data_for_score, 
     id_col="patient_id",
-    code_col="concept_code",
-    age_col="age_at_admission",
-)
+    code_col="concept_code")
 
-charlson_pl = pl.from_pandas(charlson)
-hfrs_pl = pl.from_pandas(hfrs)
 
-charlson_selected = charlson_pl.select([
+charlson_selected = charlson_score.select([
     "patient_id",
-    "Charlson Comorbidity Score"
+    "comorbidity_score"
 ])
 
-hfrs_selected = hfrs_pl.select([
+hfrs_selected = hfrs_score.select([
     "patient_id",
-    "HFRS Score"
+    "hfrs_score"
 ])
 
 # Add Charlson comorbidity score and HFRS score to the final patient table.
@@ -167,12 +163,12 @@ final_patient_data = (
     .join(charlson_selected, on="patient_id", how="left")
     .join(hfrs_selected, on="patient_id", how="left")
     .with_columns([
-        pl.col("Charlson Comorbidity Score").fill_null(0),
-        pl.col("HFRS Score").fill_null(0),
+        pl.col("comorbidity_score").fill_null(0),
+        pl.col("hfrs_score").fill_null(0),
     ])
 )
 
-# Calculating OMT Score 
+# Calculate OMT Score 
 final_patient_data = final_patient_data.with_columns([
     (
         pl.col("beta_blocker").fill_null(0)
@@ -185,6 +181,16 @@ final_patient_data = final_patient_data.with_columns([
        # + pl.col("sglt2i").fill_null(0)
     ).alias("OMT_component_score")
 ])
+
+
+# Creat death_flag
+final_patient_data = final_patient_data.with_columns([
+    pl.when(pl.col("death_date").is_not_null())
+    .then(1)
+    .otherwise(0)
+    .alias("death_flag")
+])
+
 
 # Save the final patient-level dataset as a Parquet file.
 final_patient_data.write_parquet("final_patient_data.parquet")
