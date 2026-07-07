@@ -1,7 +1,7 @@
 import polars as pl
 import pandas as pd
 import json 
-from comorbidipy import comorbidity, ScoreType, hfrs
+import pycomorb
 import icu_flag
 import hosps
 import cim10_utils
@@ -128,27 +128,36 @@ data_for_score = (
     .unique()
 )
 
-charlson_score = comorbidity( 
-    data_for_score,        
-    id_col="patient_id",        
-    code_col="concept_code",        
-    score=ScoreType.CHARLSON,
-)
+data_for_score_pd = data_for_score.to_pandas()
 
-hfrs_score = hfrs(
-    data_for_score, 
+charlson = comorbidity(
+    score="charlson",
+    df=data_for_score_pd,
     id_col="patient_id",
-    code_col="concept_code"
+    code_col="concept_code",
+    age_col="age_at_admission",
+    implementation="quan",
 )
 
-charlson_selected = charlson_score.select([
+hfrs = comorbidity(
+    score="hfrs",
+    df=data_for_score_pd,
+    id_col="patient_id",
+    code_col="concept_code",
+    age_col="age_at_admission",
+)
+
+charlson_pl = pl.from_pandas(charlson)
+hfrs_pl = pl.from_pandas(hfrs)
+
+charlson_selected = charlson_pl.select([
     "patient_id",
-    "comorbidity_score"
+    "Charlson Comorbidity Score"
 ])
 
-hfrs_selected = hfrs_score.select([
+hfrs_selected = hfrs_pl.select([
     "patient_id",
-    "hfrs_score"
+    "HFRS Score"
 ])
 
 # Add Charlson comorbidity score and HFRS score to the final patient table.
