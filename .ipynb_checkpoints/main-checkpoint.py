@@ -168,8 +168,8 @@ final_patient_data = (
     .join(charlson_selected, on="patient_id", how="left")
     .join(hfrs_selected, on="patient_id", how="left")
     .with_columns([
-        pl.col("comorbidity_score").fill_null(0),
-        pl.col("hfrs_score").fill_null(0),
+        pl.col("Charlson Comorbidity Score").fill_null(0),
+        pl.col("HFRS Score").fill_null(0),
     ])
 )
 
