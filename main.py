@@ -69,7 +69,7 @@ disease_cols = ["Cardiopathie ischémique", "Fibrillation atriale", "Insuffisanc
                "Cirrhose", "Cancer actif", "Immunodépression", "Dyslipidémie", "Diabète"]
 
 # Add patient-level comorbidity flags to the first inclusion hospital stay table.
-included_patients_with_comorbidity =comorbidity_utils.get_included_patients_with_comorbidity(
+included_patients_with_comorbidity = comorbidity_utils.get_included_patients_with_comorbidity(
     first_inclusion_hosps,
     patient_comorbidities,
     disease_cols
